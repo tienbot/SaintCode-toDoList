@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link type="image/x-icon" href="./favicon.svg" rel="shortcut icon">
+    <title>ToDo List</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style/reset.css">
+    <link rel="stylesheet" href="./style/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>ToDo List</h1>
+        </div>
+    </header>
+    <main>
+        <div class="container">
+            <div class="toDoList">
+                <div class="toDoList__top">
+                    <form action="">
+                        <input type="text" placeholder="Сделать удаление завершенных и всех">
+                        <input type="submit" value="Добавить">
+                    </form>
+                </div>
+                <div class="toDoList__main">
+                    <div class="list">
+                        <div class="list__wrapper">
+                            <input type="checkbox" class="customCheckbox" id='toDo1' name="toDo1">
+                            <label for="toDo1" class="">Сделать удаление каждого элемента по крестику справа</label>
+                        </div>
+                        <span class="deleteItem">❌</span>
+                    </div>
+                </div>
+                <div class="toDoList__bottom">
+                    <button id="deleteClose">Удалить завершенные</button>
+                    <button id="deleteAll">Удалить все</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="./script.js"></script>
+</body>
+</html>
