@@ -1,6 +1,6 @@
 const form = document.querySelector('form')
 const input = document.querySelector('#input')
-const toDoListArr = []
+let toDoListArr = [] //массиваная версия LS ???
 const checkbox = document.querySelectorAll('.customCheckbox')
 const delleteItemBtn = document.querySelectorAll('.deleteItem')
 const deleteCloseItemsBtn = document.querySelector('#deleteClose')
@@ -8,41 +8,62 @@ const deleteAllItemsBtn = document.querySelector('#deleteAll')
 let closeItem = ''
 const toDoList__main = document.querySelector('.toDoList__main')
 const toDoList__bottom = document.querySelector('.toDoList__bottom')
-let i=0
-let localItems = '';
-(window.localStorage.getItem('toDoList') == null) ? localItems = '' : localItems = window.localStorage.getItem('toDoList')
-likedItem = localItems.split(',')
-console.log(likedItem)
+let i=1
+let localItems = null;//пустой LS
+let lokalItem = [] //массиваная версия LS
+if (window.localStorage.getItem('toDoList') == null){
+    console.log('empty')
+} else {
+    localItems = window.localStorage.getItem('toDoList')
+    lokalItem = localItems.split(',')  //создаем массив, разделенный запятыми
+    toDoListArr = localItems.split(',')  //создаем массив, разделенный запятыми
+}
+empty()
 
-toDoList__main.style.display='none'
-toDoList__bottom.style.display='none'
+function empty(){
+    toDoList__main.style.display='none'
+    toDoList__bottom.style.display='none'
+}
 
 //убрать дефолтное поведение формы (убрать обновление страницы)
 form.addEventListener("submit", (e)=>{
     e.preventDefault()
 })
 
+function addLS(){
+    localItems = window.localStorage.setItem('toDoList', toDoListArr)
+    lokalItem.push(input.value)
+    localItems = lokalItem.join(',')
+}
+
+function delLS(){
+    toDoListArr.pop()
+    localItems = window.localStorage.setItem('toDoList', toDoListArr)
+    lokalItem.pop()
+    localItems = lokalItem.join(',')
+    if (window.localStorage.getItem('toDoList') == ''){
+        empty()
+    }
+}
+
 // настройка работы input-а
 input.addEventListener('change', (event) => {
     let task = input.value
-    toDoListArr.push(input.value)
-    window.localStorage.setItem('toDoList', toDoListArr)
-    console.log(input.value)
+    toDoListArr.push(task)
+    addLS()
     event.target.value = ''
     createItem(task, i)
     i++
-    toDoList__main.style.display='block'
-    toDoList__bottom.style.display='flex'
 })
 
-//удалить задание при нажатии
-function deleteItem(item) {
-    item.parentElement.style.display='none'
+//перебор всех заданий из localStorage и отображение их на странице
+if (localItems !== null){
+    lokalItem.map((el) => {
+        createItem(el, i)
+        i++
+    })
 }
 
-function makeItAgain(){
-
-}
 //перечеркнуть задание при нажатии
 function isCheck(item) {
     item.nextElementSibling.classList.toggle('close')
@@ -58,6 +79,7 @@ function deleteCloseItems(item) {
     item.forEach(el => {
         el.parentElement.parentElement.style.display='none'
     })
+    delLS()
 }
 
 //запустить удаление всех заданий при нажатии
@@ -66,12 +88,14 @@ deleteAllItemsBtn.addEventListener('click', () => {
 })
 //удалить все задания
 function deleteAllItems() {
+    toDoListArr = []
+    window.localStorage.removeItem('toDoList')
+    // window.localStorage.getItem('toDoList') = []
     item = document.querySelectorAll('.list')
     item.forEach(el => {
         el.style.display='none'
     })
-    toDoList__main.style.display='none'
-    toDoList__bottom.style.display='none'
+    empty()
 }
 
 function createItem(object, iter) {
@@ -90,9 +114,10 @@ function createItem(object, iter) {
     deleteItem.innerHTML = '❌'
     deleteItem.addEventListener('click', () => {
         deleteItem.parentElement.style.display='none'
-        // window.localStorage.removeItem('toDoList', toDoListArr)
-        // toDoListArr = toDoListArr.filter(el => el==1)
+        console.log(deleteItem.parentElement.children[0].children[1].innerHTML)
+        delLS()
     })
+    
 
     const checkbox = document.createElement('input')
     checkbox.type = 'checkbox'
@@ -110,11 +135,12 @@ function createItem(object, iter) {
     toDoList__main.append(list)
     list.append(list__wrapper, deleteItem)
     list__wrapper.append(checkbox, label)
+
+    toDoList__main.style.display='block'
+    toDoList__bottom.style.display='flex'
 }
 
-
-//Добавить - добавить чекбокс из localStorage после нажатия кнопки
-//Удалить все - очистить localStorage
-//удалить чекбокс = удалить из localStorage
-//удалить завершенные - удалить перечеркнутые из localStorage
+// минусы:
+// - нажимаем на удаление - удаляется последний элемент
+// удалить завершенные
 
