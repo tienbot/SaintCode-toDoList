@@ -2,7 +2,7 @@ let toDoListArr = [] //массиваная версия LS (массивLS)
 const toDoList__main = document.querySelector('.toDoList__main')
 const toDoList__bottom = document.querySelector('.toDoList__bottom')
 let closeItem = ''
-let i=1
+let i=null
 let localItems = null; //пустой LS
 let checkboxChoose = []
 
@@ -13,24 +13,21 @@ document.querySelector('form').addEventListener("submit", (e)=>{
     e.preventDefault()
 })
 
+if(window.localStorage.getItem('toDoList') !== null){
+    localItems = window.localStorage.getItem('toDoList')
+    console.log(localItems)
+} else {
+    i=1
+}
+
 //проверка LS на пустоту
 if (window.localStorage.getItem('toDoList') !== null){
-    localItems = window.localStorage.getItem('toDoList')
-    let obj=null
-    let arrTask=[]
-    let arrID=[]
-    obj = JSON.parse(localItems)
-    for(let i=0; i<obj.length; i++){
-        arrTask.push(obj[i].task)
-        arrID.push(obj[i].id)
-        console.log(arrID)
-    }
-    toDoListArr = arrTask  //создаем массив, разделенный запятыми
+    localItems = window.localStorage.getItem('toDoList') //
+    toDoListArr = localItems.split(',')  //создаем массив, разделенный запятыми
     toDoListArr.map((el) => { //перебор всех заданий из localStorage и отображение их на странице
         createItem(el, i)
         i++
     })
-    toDoListArr = JSON.parse(localItems)
 }
 
 //скрыть центральную и нижнюю часть блока
@@ -41,12 +38,8 @@ function empty(){
 
 //удалить данные из LS
 function delLS(item){
-    toDoListArr=toDoListArr.filter(function(value, index) {
-        return(value.id != item)
-    })
-    let arrayString = JSON.stringify(toDoListArr)
-    console.log(toDoListArr)
-    localItems = window.localStorage.setItem('toDoList', arrayString)
+    toDoListArr.splice(toDoListArr.indexOf(item), 1)
+    localItems = window.localStorage.setItem('toDoList', toDoListArr)
     if (window.localStorage.getItem('toDoList') == ''){
         empty()
     }
@@ -79,14 +72,15 @@ function createItem(object, iter) {
             deleteAllItems()
         } else {
             deleteItem.parentElement.style.display='none'
-            delLS(deleteItem.parentElement.children[0].children[0].id)
+            console.log(deleteItem.parentElement.children[0].children[1].innerHTML)
+            delLS(deleteItem.parentElement.children[0].children[1].innerHTML)
         }
     })
 
     const checkbox = document.createElement('input') //добавляем чекбокс
     checkbox.type = 'checkbox' //устанавливаем тип checkbox
     checkbox.className = "customCheckbox" //добавляем класс customCheckbox
-    checkbox.id = i //добавляем id
+    checkbox.id = `toDo${iter}` //добавляем id
     checkbox.name = `toDo${iter}` //добавляем name
     //Слушатель 'checkbox'
     checkbox.addEventListener('click', () => {
@@ -126,8 +120,8 @@ function delDublicat(a, b) {
 
 // Слушатель input. Настройка работы input-а
 document.querySelector('#input').addEventListener('change', (event) => {
-    addObj()
-
+    toDoListArr.push(input.value) //добавляем в массивLS значение из инпута
+    localItems = window.localStorage.setItem('toDoList', toDoListArr) //переносим данные из массиваLS в сам LS
     createItem(input.value, i) //отображаем элемент на странице; i - индекс для id
     i++ //добавляем i в счетчик
     event.target.value = '' //опустошаем input
@@ -153,18 +147,6 @@ document.querySelector('#deleteAll').addEventListener('click', () => {
     deleteAllItems()
 })
 
-function addObj(){
-    obj = {
-        task: input.value,
-        isDone: 0,
-        id: i
-    }
-    toDoListArr.push(obj)
-    let arrayString = JSON.stringify(toDoListArr)
-    localItems = window.localStorage.setItem('toDoList', arrayString);
-}
-
 // минусы:
-// удалить дело - LS првильно изменяется!!!
-// checkbox нажат - объект изменен
+//в LS должен быть контент и состояние. массив из объектов!
 //обновить страницу - завершенные дела сохранены
