@@ -1,10 +1,7 @@
 let toDoListArr = [] //массиваная версия LS (массивLS)
 const toDoList__main = document.querySelector('.toDoList__main')
 const toDoList__bottom = document.querySelector('.toDoList__bottom')
-let closeItem = ''
-let i=1
 let localItems = null; //пустой LS
-let checkboxChoose = []
 
 empty()
 
@@ -13,24 +10,17 @@ document.querySelector('form').addEventListener("submit", (e)=>{
     e.preventDefault()
 })
 
-//проверка LS на пустоту
+//перебор данных после обновления страницы
 if (window.localStorage.getItem('toDoList') !== null){
     localItems = window.localStorage.getItem('toDoList')
-    let obj=null
-    let arrTask=[]
-    let arrID=[]
-    obj = JSON.parse(localItems)
-    for(let i=0; i<obj.length; i++){
-        arrTask.push(obj[i].task)
-        arrID.push(obj[i].id)
-        console.log(arrID)
-    }
-    toDoListArr = arrTask  //создаем массив, разделенный запятыми
-    toDoListArr.map((el) => { //перебор всех заданий из localStorage и отображение их на странице
-        createItem(el, i)
-        i++
-    })
     toDoListArr = JSON.parse(localItems)
+    toDoListArr.forEach(obj => createItem(obj.task, obj.id, obj.isDone)) //перебор массивного LS
+}
+
+// перезаписать LS
+function rebootArr(){
+    let arrayString = JSON.stringify(toDoListArr)
+    return localItems = window.localStorage.setItem('toDoList', arrayString)
 }
 
 //скрыть центральную и нижнюю часть блока
@@ -44,9 +34,7 @@ function delLS(item){
     toDoListArr=toDoListArr.filter(function(value, index) {
         return(value.id != item)
     })
-    let arrayString = JSON.stringify(toDoListArr)
-    console.log(toDoListArr)
-    localItems = window.localStorage.setItem('toDoList', arrayString)
+    rebootArr()
     if (window.localStorage.getItem('toDoList') == ''){
         empty()
     }
@@ -64,7 +52,7 @@ function deleteAllItems() {
 }
 
 //отобразить задание
-function createItem(object, iter) {
+function createItem(object, iter, isDone) {
     const toDoList__main = document.body.querySelector(".toDoList__main") //находим .toDoList__main
     const list = document.createElement('div') //создаем div для задания 
     list.className = "list" //добавляем ему класс .list
@@ -86,24 +74,33 @@ function createItem(object, iter) {
     const checkbox = document.createElement('input') //добавляем чекбокс
     checkbox.type = 'checkbox' //устанавливаем тип checkbox
     checkbox.className = "customCheckbox" //добавляем класс customCheckbox
-    checkbox.id = i //добавляем id
-    checkbox.name = `toDo${iter}` //добавляем name
+    checkbox.id = iter//добавляем id
+    checkbox.name = iter //добавляем name
+
     //Слушатель 'checkbox'
-    checkbox.addEventListener('click', () => {
-        checkbox.nextElementSibling.classList.toggle('close')
-         //При нажатии добавляем класс close
-        if(checkbox.nextSibling.classList == 'close'){ //если у элемента есть класс close
-            checkboxChoose.splice(0, 0, checkbox.nextSibling.innerHTML) //удаляем его из массива checkboxChoose
-            console.log(checkboxChoose)
-        } else {
-            checkboxChoose.splice(checkboxChoose.indexOf(checkbox.nextSibling.innerHTML), 1) //иначе - добавляем в массив checkboxChoose
-            console.log(checkboxChoose)
+    checkbox.addEventListener('click', (e) => {
+        if (e.target.checked == true){
+            toDoListArr = toDoListArr.map((obj) => (
+                (obj.id === iter) ? { ...obj, isDone: 1 } : obj
+            ))
+        } else if(e.target.checked == false){
+            toDoListArr = toDoListArr.map((obj) => (
+                (obj.id === iter) ? { ...obj, isDone: 0 } : obj
+            ))
         }
+        rebootArr() //перезаписываем LS
+        localItems = window.localStorage.getItem('toDoList')
+        toDoListArr = JSON.parse(localItems)
+        checkbox.nextElementSibling.classList.toggle('close')
     })
 
     const label = document.createElement('label') //добавляем лейбл
-    label.htmlFor = `toDo${iter}` //добавляем ему for
+    label.htmlFor = iter //добавляем ему for
     label.innerHTML = object //пишем значение из input-а
+    if(isDone == 1) { //если в LS указано, что дело сделано - добавить классы
+        label.classList.add("close")
+        checkbox.checked = true
+    }
     
     toDoList__main.append(list) //отображаем list
     list.append(list__wrapper, deleteItem) //отображаем все внутри list-а
@@ -113,36 +110,30 @@ function createItem(object, iter) {
     toDoList__bottom.style.display='flex'
 }
 
-//сравнить два массива и вернуть один с уникальными значениями
-function delDublicat(a, b) {
-    var result = [];
-    for(var i = 0; i < a.length; i++) {
-        if (b.indexOf(a[i]) == -1) {
-            result.push(a[i]);
-        }
-    }
-    return result;
-}
-
 // Слушатель input. Настройка работы input-а
 document.querySelector('#input').addEventListener('change', (event) => {
-    addObj()
+    obj = {
+        task: input.value,
+        isDone: 0,
+        id: Math.random()
+    }
+    toDoListArr.push(obj)
+    rebootArr() //перезаписываем LS
 
-    createItem(input.value, i) //отображаем элемент на странице; i - индекс для id
-    i++ //добавляем i в счетчик
+    createItem(input.value, obj.id) //отображаем элемент на странице;
     event.target.value = '' //опустошаем input
 })
 
 //Слушатель 'Удалить завершенные'
 document.querySelector('#deleteClose').addEventListener('click', () => {
-    closeItem = document.querySelectorAll('.close') //перебираем все элементы с классом close...
+    let closeItem = document.querySelectorAll('.close') //перебираем все элементы с классом close...
     closeItem.forEach(el => {
         el.parentElement.parentElement.style.display='none' //... скрываем все, что нашли 
     })
-    toDoListArr = delDublicat(toDoListArr, checkboxChoose) //сравниваем массив завершенных дел и массивLS
-    localItems = window.localStorage.setItem('toDoList', toDoListArr) //переносим данные из массиваLS в сам LS
-    checkboxChoose = [] //обнуляем массив выбранных элементов
-
+    toDoListArr=toDoListArr.filter(function(value, index) {
+        return(value.isDone != 1)
+    })
+    rebootArr() //перезаписываем LS
     if(toDoListArr.length == 0){ //если массивLS пустой...
         deleteAllItems()//удаляем все и скрываем середину и низ блока
     }
@@ -152,19 +143,3 @@ document.querySelector('#deleteClose').addEventListener('click', () => {
 document.querySelector('#deleteAll').addEventListener('click', () => {
     deleteAllItems()
 })
-
-function addObj(){
-    obj = {
-        task: input.value,
-        isDone: 0,
-        id: i
-    }
-    toDoListArr.push(obj)
-    let arrayString = JSON.stringify(toDoListArr)
-    localItems = window.localStorage.setItem('toDoList', arrayString);
-}
-
-// минусы:
-// удалить дело - LS првильно изменяется!!!
-// checkbox нажат - объект изменен
-//обновить страницу - завершенные дела сохранены
