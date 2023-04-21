@@ -1,23 +1,27 @@
 let toDoListArr = [] //массиваная версия LS (массивLS)
-let list = document.querySelectorAll('.list')
 const toDoList__main = document.querySelector('.toDoList__main')
 const toDoList__bottom = document.querySelector('.toDoList__bottom')
+let localItems = null; //пустой LS
 
 empty()
+
 //убрать дефолтное поведение формы (убрать обновление страницы)
 document.querySelector('form').addEventListener("submit", (e)=>{
     e.preventDefault()
 })
 
-//получение данных с сервера
-function getTask(){
-    fetch("http://24api.ru/rest-todo/items-by-id?id=880", {
-        "method": "GET"
-    })
-    .then(data => data.json())
-    .then(data => data.forEach(obj => createItem(obj.name, obj.id, obj.isDone)))
+//перебор данных после обновления страницы
+if (window.localStorage.getItem('toDoList') !== null){
+    localItems = window.localStorage.getItem('toDoList')
+    toDoListArr = JSON.parse(localItems)
+    toDoListArr.forEach(obj => createItem(obj.task, obj.id, obj.isDone)) //перебор массивного LS
 }
-getTask()
+
+// перезаписать LS
+function rebootArr(){
+    let arrayString = JSON.stringify(toDoListArr)
+    return localItems = window.localStorage.setItem('toDoList', arrayString)
+}
 
 //скрыть центральную и нижнюю часть блока
 function empty(){
@@ -25,13 +29,33 @@ function empty(){
     toDoList__bottom.style.display='none'
 }
 
+//удалить данные из LS
+function delLS(item){
+    toDoListArr=toDoListArr.filter(function(value, index) {
+        return(value.id != item)
+    })
+    rebootArr()
+    if (window.localStorage.getItem('toDoList') == ''){
+        empty()
+    }
+}
+
+//удалить все задания
+function deleteAllItems() {
+    toDoListArr = [] //опустошаем массивLS
+    window.localStorage.removeItem('toDoList') //удаляем все значения toDoList из LS
+    item = document.querySelectorAll('.list') //находим все задания в списке и...
+    item.forEach(el => {
+        el.style.display='none' //... скрываем их
+    })
+    empty() //скрыть центральную и нижнюю часть блока
+}
+
 //отобразить задание
 function createItem(object, iter, isDone) {
     const toDoList__main = document.body.querySelector(".toDoList__main") //находим .toDoList__main
     const list = document.createElement('div') //создаем div для задания 
     list.className = "list" //добавляем ему класс .list
-
-
     const list__wrapper = document.createElement('div') //создаем обертку для задания
     list__wrapper.className = "list__wrapper" // добавляем ей класс list__wrapper
     const deleteItem = document.createElement('span') //создаем кнопку удаления
@@ -39,10 +63,12 @@ function createItem(object, iter, isDone) {
     deleteItem.innerHTML = '❌' //внутри рисуем крест
     //Слушатель 'X'
     deleteItem.addEventListener('click', () => {
-            fetch(`http://24api.ru/rest-todo/${iter}`, {
-                method: 'DELETE'
-            })
+        if(toDoListArr.length == 1){
+            deleteAllItems()
+        } else {
             deleteItem.parentElement.style.display='none'
+            delLS(deleteItem.parentElement.children[0].children[0].id)
+        }
     })
 
     const checkbox = document.createElement('input') //добавляем чекбокс
@@ -53,26 +79,18 @@ function createItem(object, iter, isDone) {
 
     //Слушатель 'checkbox'
     checkbox.addEventListener('click', (e) => {
-        let check = null
         if (e.target.checked == true){
-            check = {"isDone": 1}
-            fetch(`http://24api.ru/rest-todo/${iter}`, {
-                method: "PUT",
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(check)
-            })
+            toDoListArr = toDoListArr.map((obj) => (
+                (obj.id === iter) ? { ...obj, isDone: 1 } : obj
+            ))
         } else if(e.target.checked == false){
-            check = {"isDone": 0}
-            fetch(`http://24api.ru/rest-todo/${iter}`, {
-                method: "PUT",
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(check)
-            })
+            toDoListArr = toDoListArr.map((obj) => (
+                (obj.id === iter) ? { ...obj, isDone: 0 } : obj
+            ))
         }
+        rebootArr() //перезаписываем LS
+        localItems = window.localStorage.getItem('toDoList')
+        toDoListArr = JSON.parse(localItems)
         checkbox.nextElementSibling.classList.toggle('close')
     })
 
@@ -94,70 +112,34 @@ function createItem(object, iter, isDone) {
 
 // Слушатель input. Настройка работы input-а
 document.querySelector('#input').addEventListener('change', (event) => {
-    const task = {
-        'id': null,
-        'name': input.value,
-        'isDone': 0,
-        "user_id": 880,
+    obj = {
+        task: input.value,
+        isDone: 0,
+        id: Math.random()
     }
+    toDoListArr.push(obj)
+    rebootArr() //перезаписываем LS
 
-    fetch("http://24api.ru/rest-todo", {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(task)
-    })
-        .then(data => createItem(task.name, task.id)) //отображаем элемент на странице;
+    createItem(input.value, obj.id) //отображаем элемент на странице;
     event.target.value = '' //опустошаем input
 })
 
 //Слушатель 'Удалить завершенные'
 document.querySelector('#deleteClose').addEventListener('click', () => {
-    let arr = []
     let closeItem = document.querySelectorAll('.close') //перебираем все элементы с классом close...
     closeItem.forEach(el => {
-        arr.push(+el.getAttribute('for'))
         el.parentElement.parentElement.style.display='none' //... скрываем все, что нашли 
     })
-
-    const delAll = {
-        'items': arr
-    }
-
-    fetch('http://24api.ru/rest-todo/delete-items', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(delAll)
+    toDoListArr=toDoListArr.filter(function(value, index) {
+        return(value.isDone != 1)
     })
+    rebootArr() //перезаписываем LS
+    if(toDoListArr.length == 0){ //если массивLS пустой...
+        deleteAllItems()//удаляем все и скрываем середину и низ блока
+    }
 })
 
 //Слушатель 'Удалить все'
 document.querySelector('#deleteAll').addEventListener('click', () => {
-    let arr = []
-    let list = document.querySelectorAll('.list') //находим все задания в списке и...
-    list.forEach(el => {
-        arr.push(+el.children[0].children[0].id)
-        el.style.display='none' //... скрываем их
-    })
-
-    const delAll = {
-        'items': arr
-    }
-
-    fetch('http://24api.ru/rest-todo/delete-items', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(delAll)
-    })
-
-    empty() //скрыть центральную и нижнюю часть блока
+    deleteAllItems()
 })
-
-// ToDo
-// 7. Удалить нижние кнопки
-// 8. Рефакторинг кода
