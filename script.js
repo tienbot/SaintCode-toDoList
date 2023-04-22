@@ -161,3 +161,4 @@ document.querySelector('#deleteAll').addEventListener('click', () => {
 // ToDo
 // 7. Удалить нижние кнопки
 // 8. Рефакторинг кода
+// 9. Данные не возвращаются с сервера
